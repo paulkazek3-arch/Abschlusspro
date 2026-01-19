@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PrüfungsPilot – Abschlussprüfung 10. Klasse</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1565c0">
+
+<style>
+:root { --primary:#1565c0; --secondary:#42A5F5; --bg:#f4f6f8; --success:#2E7D32; --warn:#EF6C00; }
+body { margin:0; font-family:Inter,Arial,sans-serif; background:var(--bg); }
+header { background:var(--primary); color:white; padding:30px; text-align:center; }
+section { max-width:1000px; margin:auto; padding:20px; }
+.card { background:white; padding:20px; border-radius:10px; margin-bottom:20px; }
+button { background:var(--primary); color:white; border:none; padding:10px 16px; border-radius:6px; cursor:pointer; }
+progress { width:100%; height:20px; }
+input, textarea, select { width:100%; padding:10px; margin-bottom:10px; }
+.locked { opacity:0.4; pointer-events:none; }
+footer { text-align:center; font-size:14px; padding:20px; }
+</style>
+</head>
+<body>
+
+<header>
+<h1>PrüfungsPilot – Abschlussprüfung 10. Klasse</h1>
+<p>Mit KI · Lernfortschritt · Lehrergruppen</p>
+</header>
+
+<section id="login">
+<div class="card">
+<h2>🔐 Login / Registrierung</h2>
+<input type="email" id="email" placeholder="E-Mail eingeben">
+<select id="role">
+<option value="student">Schüler</option>
+<option value="teacher">Lehrer</option>
+</select>
+<button onclick="register()">Einloggen / Registrieren</button>
+<button onclick="pay()">Einmal 2,99€ zahlen</button>
+<p id="msg"></p>
+</div>
+</section>
+
+<section id="app" class="locked">
+
+<div class="card">
+<h2>📊 Dein Lernfortschritt</h2>
+<progress id="progress" value="0" max="100"></progress>
+<p id="percent">0%</p>
+</div>
+
+<div class="card">
+<h2>🤖 KI Lernhilfe</h2>
+<textarea id="question" placeholder="Stelle deine Frage..."></textarea>
+<button onclick="askAI()">KI fragen</button>
+<p id="answer"></p>
+</div>
+
+<div class="card">
+<h2>📘 Aufgaben & Gruppen</h2>
+<input id="groupName" placeholder="Neue Gruppe erstellen (Lehrer)">
+<button onclick="createGroup()">Gruppe erstellen</button>
+<input id="joinCode" placeholder="Beitrittscode eingeben (Schüler)">
+<button onclick="join()">Gruppe beitreten</button>
+<select id="subject">
+<option>Mathe</option><option>Deutsch</option>
+<option>Englisch</option><option>Physik</option>
+</select>
+<button onclick="gen()">KI Aufgabe erstellen</button>
+</div>
+
+</section>
+
+<footer>
+<a href="impressum.html">Impressum</a> ·
+<a href="datenschutz.html">Datenschutz</a>
+</footer>
+
+<script>
+let userEmail=""; let userRole=""; let GROUP_ID="";
+
+function pay(){ window.location.href="https://DEIN-VERCEL-PROJEKT.vercel.app/api/pay"; }
+
+async function register(){
+userEmail = document.getElementById("email").value;
+userRole = document.getElementById("role").value;
+const res = await fetch("https://DEIN-VERCEL-PROJEKT.vercel.app/api/auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:userEmail,role:userRole})});
+const data = await res.json();
+document.getElementById("msg").innerText="✅ Eingeloggt: "+data.email;
+document.getElementById("app").classList.remove("locked");
+loadProgress();
+}
+
+async function askAI(){
+const r = await fetch("https://DEIN-VERCEL-PROJEKT.vercel.app/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:userEmail,question:document.getElementById("question").value})});
+const d = await r.json();
+document.getElementById("answer").innerText = d.answer;
+}
+
+async function loadProgress(){
+const r = await fetch("https://DEIN-VERCEL-PROJEKT.vercel.app/api/progress?email="+userEmail);
+const d = await r.json();
+document.getElementById("progress").value=d.progress;
+document.getElementById("percent").innerText=d.progress+"%";
+}
+
+async function done(){ await fetch("https://DEIN-VERCEL-PROJEKT.vercel.app/api/progress",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:userEmail})}); loadProgress(); }
+
+async function createGroup(){
+const r = await fetch("https://DEIN-VERCEL-PROJEKT.vercel.app/api/create-group",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({teacherEmail:userEmail,name:document.getElementById("groupName").value})});
+const data = await r.json(); alert("Gruppe erstellt! Beitrittscode: "+data.join_code); GROUP_ID=data.id;
+}
+
+async function join(){
+const r = await fetch("https://DEIN-VERCEL-PROJEKT.vercel.app/api/join-group",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:userEmail,code:document.getElementById("joinCode").value})});
+const data = await r.json(); alert("Beigetreten!"); GROUP_ID=data.group.id;
+}
+
+async function gen(){
+const r = await fetch("https://DEIN-VERCEL-PROJEKT.vercel.app/api/generate-task",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({group_id:GROUP_ID,subject:document.getElementById("subject").value,level:"10. Klasse Realschule"})});
+const data = await r.json(); alert("Aufgabe erstellt: "+data.question);
+}
+</script>
+
+</body>
+</html>
